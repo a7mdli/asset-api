@@ -76,3 +76,15 @@ def bulk_import(
     db: Session = Depends(get_db)
 ):
     return import_assets(db, assets)
+
+@router.patch("/{asset_id}/stale", response_model=AssetResponse)
+def mark_stale(
+    asset_id: UUID,
+    db: Session = Depends(get_db),
+):
+    asset = mark_asset_stale(db, asset_id)
+
+    if asset is None:
+        raise HTTPException(status_code=404, detail="Asset not found")
+
+    return asset

@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 from uuid import uuid4
 
 from sqlalchemy.orm import Session
@@ -96,7 +96,6 @@ def update_asset(db: Session, asset_id, update: AssetUpdate):
         data["asset_metadata"] = data.pop("metadata")
     for key, value in data.items():
         setattr(asset, key, value)
-        asset.last_seen = datetime.utcnow()
     db.commit()
     db.refresh(asset)
     return asset
@@ -117,13 +116,10 @@ def import_assets(db: Session, assets: list[AssetImport]):
         existing = db.query(Asset).filter(Asset.id == asset.id).first()
 
         if existing:
-            # Update last_seen
-            existing.last_seen = datetime.utcnow()
+            existing.last_seen = datetime.now(timezone.utc)
 
-            # Merge tags (remove duplicates)
             existing.tags = list(set(existing.tags or []) | set(asset.tags or []))
 
-            # Merge metadata (new values overwrite existing ones)
             existing.asset_metadata = {
                 **(existing.asset_metadata or {}),
                 **(asset.metadata or {})
@@ -149,3 +145,16 @@ def import_assets(db: Session, assets: list[AssetImport]):
         db.refresh(asset)
 
     return imported
+
+def mark_asset_stale(db: Session, asset_id):
+    asset = db.query(Asset).filter(Asset.id == asset_id).first()
+
+    if asset is None:
+        return None
+
+    asset.status = AssetStatus.stale
+
+    db.commit()
+    db.refresh(asset)
+
+    return asset

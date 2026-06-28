@@ -1,6 +1,6 @@
 import uuid
 import enum
-from datetime import datetime
+from datetime import datetime, timezone
 
 from sqlalchemy import Column, String, DateTime, Enum, JSON
 from sqlalchemy.dialects.postgresql import UUID, ARRAY
@@ -34,8 +34,16 @@ class Asset(Base):
         default=AssetStatus.active,
         nullable=False,
     )
-    first_seen = Column(DateTime, default=datetime.utcnow)
-    last_seen = Column(DateTime, default=datetime.utcnow)
+    first_seen = Column(
+        DateTime(timezone=True),
+        nullable=False,
+        default=lambda: datetime.now(timezone.utc),
+    )
+    last_seen = Column(
+        DateTime(timezone=True),
+        nullable=False,
+        default=lambda: datetime.now(timezone.utc),
+    )
     source = Column(String)
     tags = Column(ARRAY(String), default=list)
     asset_metadata = Column(JSON)
