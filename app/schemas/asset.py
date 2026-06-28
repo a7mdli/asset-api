@@ -38,3 +38,9 @@ class AssetResponse(BaseModel):
 
     class Config:
         from_attributes = True
+
+class AssetListResponse(BaseModel):
+    items: list[AssetResponse]
+    total: int
+    page: int
+    page_size: int

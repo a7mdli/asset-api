@@ -1,6 +1,6 @@
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
@@ -14,10 +14,33 @@ router = APIRouter(prefix="/assets", tags=["Assets"])
 def create(asset: AssetCreate, db: Session = Depends(get_db)):
     return create_asset(db, asset)
 
+@router.get("/", response_model=AssetListResponse)
+def list_assets(
+    page: int = Query(1, ge=1),
+    page_size: int = Query(20, ge=1, le=100),
 
-@router.get("/", response_model=list[AssetResponse])
-def get_all(db: Session = Depends(get_db)):
-    return get_assets(db)
+    asset_type: AssetType | None = Query(None, alias="type"),
+    status: AssetStatus | None = None,
+
+    tag: str | None = None,
+    value: str | None = None,
+
+    sort_by: str = Query("last_seen"),
+    sort_order: str = Query("desc"),
+
+    db: Session = Depends(get_db),
+):
+    return get_assets(
+        db,
+        page,
+        page_size,
+        asset_type,
+        status,
+        tag,
+        value,
+        sort_by,
+        sort_order,
+    )
 
 
 @router.get("/{asset_id}", response_model=AssetResponse)
