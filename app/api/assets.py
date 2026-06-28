@@ -10,9 +10,13 @@ from app.schemas.asset import *
 router = APIRouter(prefix="/assets", tags=["Assets"])
 
 
-@router.post("/", response_model=AssetResponse)
-def create(asset: AssetCreate, db: Session = Depends(get_db)):
-    return create_asset(db, asset)
+@router.post("/")
+def create(
+    asset: AssetCreate,
+    id: str | None = Query(None),
+    db: Session = Depends(get_db)
+):
+    return create_asset(db, asset, id)
 
 @router.get("/", response_model=AssetListResponse)
 def list_assets(

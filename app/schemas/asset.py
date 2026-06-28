@@ -2,7 +2,7 @@ from typing import Optional
 from datetime import datetime
 from uuid import UUID
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field, ConfigDict
 
 from app.models.asset import AssetType, AssetStatus
 
@@ -13,7 +13,7 @@ class AssetCreate(BaseModel):
     status: AssetStatus = AssetStatus.active
     source: str
     tags: list[str] = []
-    asset_metadata: dict = {}
+    metadata: dict = {}
 
 
 class AssetUpdate(BaseModel):
@@ -22,7 +22,7 @@ class AssetUpdate(BaseModel):
     status: Optional[AssetStatus] = None
     source: Optional[str] = None
     tags: Optional[list[str]] = None
-    asset_metadata: Optional[dict] = None
+    metadata: Optional[dict] = None
 
 
 class AssetResponse(BaseModel):
@@ -34,10 +34,9 @@ class AssetResponse(BaseModel):
     last_seen: datetime
     source: str
     tags: list[str]
-    asset_metadata: dict
+    metadata: dict = Field(validation_alias="asset_metadata")
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True, populate_by_name=True)
 
 class AssetListResponse(BaseModel):
     items: list[AssetResponse]

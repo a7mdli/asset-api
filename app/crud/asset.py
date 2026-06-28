@@ -1,4 +1,5 @@
 from datetime import datetime
+from uuid import uuid4
 
 from sqlalchemy.orm import Session
 from sqlalchemy import asc, desc
@@ -8,8 +9,13 @@ from app.models.asset import Asset, AssetType, AssetStatus
 from app.schemas.asset import AssetCreate, AssetUpdate
 
 
-def create_asset(db: Session, asset: AssetCreate):
-    db_asset = Asset(**asset.model_dump())
+def create_asset(db: Session, asset: AssetCreate, id: str | None):
+    data = asset.model_dump()
+    data["asset_metadata"] = data.pop("metadata")
+    db_asset = Asset(
+        id=id if id else str(uuid4()),
+        **data
+    )
     db.add(db_asset)
     db.commit()
     db.refresh(db_asset)
@@ -85,9 +91,12 @@ def update_asset(db: Session, asset_id, update: AssetUpdate):
     asset = get_asset(db, asset_id)
     if not asset:
         return None
-    for key, value in update.model_dump(exclude_unset=True).items():
+    data = update.model_dump(exclude_unset=True)
+    if "metadata" in data:
+        data["asset_metadata"] = data.pop("metadata")
+    for key, value in data.items():
         setattr(asset, key, value)
-    asset.last_seen = datetime.utcnow()
+        asset.last_seen = datetime.utcnow()
     db.commit()
     db.refresh(asset)
     return asset
