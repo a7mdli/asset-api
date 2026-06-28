@@ -43,3 +43,6 @@ class AssetListResponse(BaseModel):
     total: int
     page: int
     page_size: int
+
+class AssetImport(AssetCreate):
+    id: str

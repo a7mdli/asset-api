@@ -6,7 +6,7 @@ from sqlalchemy import asc, desc
 from sqlalchemy.orm import Session
 
 from app.models.asset import Asset, AssetType, AssetStatus
-from app.schemas.asset import AssetCreate, AssetUpdate
+from app.schemas.asset import AssetCreate, AssetUpdate, AssetImport
 
 
 def create_asset(db: Session, asset: AssetCreate, id: str | None):
@@ -109,3 +109,43 @@ def delete_asset(db: Session, asset_id):
     db.delete(asset)
     db.commit()
     return asset
+
+def import_assets(db: Session, assets: list[AssetImport]):
+    imported = []
+
+    for asset in assets:
+        existing = db.query(Asset).filter(Asset.id == asset.id).first()
+
+        if existing:
+            # Update last_seen
+            existing.last_seen = datetime.utcnow()
+
+            # Merge tags (remove duplicates)
+            existing.tags = list(set(existing.tags or []) | set(asset.tags or []))
+
+            # Merge metadata (new values overwrite existing ones)
+            existing.asset_metadata = {
+                **(existing.asset_metadata or {}),
+                **(asset.metadata or {})
+            }
+
+            imported.append(existing)
+
+        else:
+            data = asset.model_dump(exclude={"id"})
+            data["asset_metadata"] = data.pop("metadata")
+
+            db_asset = Asset(
+                id=asset.id,
+                **data
+            )
+
+            db.add(db_asset)
+            imported.append(db_asset)
+
+    db.commit()
+
+    for asset in imported:
+        db.refresh(asset)
+
+    return imported

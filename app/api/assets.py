@@ -69,3 +69,10 @@ def delete(asset_id: UUID, db: Session = Depends(get_db)):
     if not asset:
         raise HTTPException(404)
     return {"message": "Deleted"}
+
+@router.post("/import")
+def bulk_import(
+    assets: list[AssetImport],
+    db: Session = Depends(get_db)
+):
+    return import_assets(db, assets)
